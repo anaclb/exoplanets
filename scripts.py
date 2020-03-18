@@ -3,7 +3,7 @@ import numpy as np
 from sklearn.cluster import KMeans
 from astropy.units import jupiterMass, jupiterRad, solMass, solRad, AU
 
-def read_file(file, removeNaN=False, params=0,standard=False):
+def read_file(file, removeNaN=False, params=0):
     database = np.genfromtxt(file_EU, comments="--", skip_header=4,
                             dtype=None, delimiter="\t", encoding=None)
     df = pd.DataFrame(database)
