@@ -41,6 +41,8 @@ def sol_pd(file_solar,params):
     solar['obj_orb_period_day'] = solar.P*a.to(day)
     solar['obj_orb_ecc'] = solar.e*0.0167
     solar['obj_orb_a_au'] = solar.a
+    solar['obj_parent_phys_teff_k'] = pd.DataFrame(np.ones(len(solar))*5778, index=solar.index)
+    solar['obj_parent_phys_radius_rsun'] = pd.DataFrame(np.ones(len(solar)), index=solar.index)
     solar = solar[params]
     return solar
 
