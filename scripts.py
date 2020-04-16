@@ -7,6 +7,8 @@ from sklearn.preprocessing import MinMaxScaler
 from sklearn.preprocessing import StandardScaler
 scaler_norm = MinMaxScaler()
 scaler_stnd = StandardScaler()
+from sklearn.model_selection import train_test_split
+from sklearn.metrics import silhouette_score
 
 def read_file(file_exo, params=0, removeNaN=True):
 
@@ -78,6 +80,51 @@ def add_temp_eq_dataset(dataset):
     dataset.insert(2, 'temp_eq', teq_planet)
     return dataset
 
+def split(data):
+    train, test = train_test_split(data,test_size=.2,train_size=.8)
+    return train, test
+
+def sil(data):
+    K = range(2,10)
+    s = []
+    for k in K:
+        kmeans = KMeans(n_clusters=k)
+        kmeans.fit(data)
+        labels, centroids = kmeans.labels_,kmeans.cluster_centers_
+        s.append(silhouette_score(data, labels, metric='euclidean'))
+    plt.plot(K,s,zorder=0)
+    plt.ylabel("Silhouette coefficient")
+    plt.xlabel("k")
+    plt.savefig("Sil.pdf",dpi=1000,transparent=True)
+    plt.show()
+   
+def elbow(data):
+    K = range(1,10)
+    inertia = np.zeros(len(K))
+    for i,k in enumerate(K):
+        kmeanModel = KMeans(n_clusters=k)
+        kmeanModel.fit(data)
+        inertia[i] = kmeanModel.inertia_
+    plt.plot(K, inertia, 'bx-')
+    plt.xlabel('k')
+    plt.ylabel('Inertia')
+    plt.show()
+    plt.scatter(data[:,0],data[:,1])
+    plt.title("Distribution")
+    plt.show()
+
+def parallel(data,k,cols):
+    kmeans = KMeans(n_clusters=k).fit(np.log(data))
+    centroids, labels = kmeans.cluster_centers_, kmeans.labels_
+    X = pd.DataFrame(np.log(data), index=data.index, columns=data.columns)
+    X["cluster"] = labels
+    cents = pd.DataFrame(kmeans.cluster_centers_, columns=data.columns)
+    cents['cluster'] = cents.index
+    colors=['tab:green','purple','tab:blue']
+    pd.plotting.parallel_coordinates(X,class_column='cluster',color=colors,
+                                     cols=cols)
+    plt.show()
+   
 file_US="/home/bolacha/University/Project/code/data-example/all_data_US.rdb"
 file_EU="/home/bolacha/University/Project/code/data-example/all_data_EU.rdb"
 cat_solar="/home/bolacha/University/Project/code/data-example/solar_data.csv"
