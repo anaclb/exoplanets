@@ -5,12 +5,10 @@ from sklearn.cluster import KMeans
 from astropy.units import jupiterMass, jupiterRad, a, day, earthRad, earthMass, solMass, solRad, AU
 from sklearn.preprocessing import MinMaxScaler
 from sklearn.preprocessing import StandardScaler
-scaler_norm = MinMaxScaler()
-scaler_stnd = StandardScaler()
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import silhouette_score
 
-def read_file(file_exo, params=0, removeNaN=True):
+def read_file(file_exo, params=0):
 
     "Reads exoplanet file, returning a DataFrame with the asked parameters\
     \for and without NaN values. file: file path (.rdb in this case), params: list with parameters wanted\
@@ -27,8 +25,7 @@ def read_file(file_exo, params=0, removeNaN=True):
     df_exo = pd.DataFrame.set_index(df_exo,keys='obj_id_catname')
     if params != 0:
         df_exo = df_exo[params]
-    if removeNaN == True:
-        df_exo = pd.DataFrame.dropna(df_exo,axis=0, how='any')
+    df_exo = pd.DataFrame.dropna(df_exo,axis=0, how='any')
     return df_exo
 
 def sol_pd(file_solar,params):
@@ -39,32 +36,32 @@ def sol_pd(file_solar,params):
     solar=pd.DataFrame.transpose(pd.read_csv(file_solar, index_col=0))
     solar['temp_eq'] = solar.T_C+274.15
     solar['obj_phys_mass_mjup'] = solar.M*earthMass.to(jupiterMass)
-    solar['obj_phys_radius_rjup'] = solar.D/2*earthRad.to(jupiterRad)
+    solar['obj_phys_radius_rjup'] = solar.D*earthRad.to(jupiterRad)
     solar['obj_orb_period_day'] = solar.P*a.to(day)
     solar['obj_orb_ecc'] = solar.e*0.0167
     solar['obj_orb_a_au'] = solar.a
-    solar['obj_parent_phys_teff_k'] = pd.DataFrame(np.ones(len(solar))*5778, index=solar.index)
-    solar['obj_parent_phys_radius_rsun'] = pd.DataFrame(np.ones(len(solar)), index=solar.index)
+    solar['obj_parent_phys_teff_k'] = pd.DataFrame(np.ones(len(solar))*5778, index = solar.index)
+    solar['obj_parent_phys_radius_rsun'] = pd.DataFrame(np.ones(len(solar)), index = solar.index)
+    solar['obj_parent_phys_mass_msun'] = pd.DataFrame(np.ones(len(solar)), index = solar.index)
+    solar['obj_parent_phys_feh'] = pd.DataFrame(np.zeros(len(solar)), index = solar.index)
     solar = solar[params]
     return solar
 
-def exo_sol(file_exo,file_solar,params,stnd=False,norm=False,removeNaN=True):
+def exo_sol(file_exo,file_solar,params, logP=False, earthUnits=False):
 
     "Reads exoplanet and solar files, returns DataFrame containing both data for the wanted parameters,\
     \with different normalization options.\
     \file_exo: exoplanet file path (.rdb).\
     \file_solar: solar system planets file path (.csv),\
-    \params: list of parameters wanted.\
-    \stnd: True/False, True for data standardization, centers the distribution in 0 and scales it to unit variance.\
-    \norm: True/False, True for normalization, scales the distribution's range to [0,1]."
+    \params: list of parameters wanted."
 
     df_solar = sol_pd(file_solar, params)
-    df_exo = read_file(file_exo, params, removeNaN)
+    df_exo = read_file(file_exo, params)
     data = pd.concat([df_exo, df_solar])
-    if stnd == True:
-        data = scaler_stnd.fit_transform(data)
-    if norm == True:
-        data = scaler_norm.fit_transform(data)
+    if logP == True:
+        data['log_obj_orb_period_day']=np.log10(data.obj_orb_period_day)
+        data=data.drop(columns='obj_orb_period_day')
+    data = data.drop(['PLUTO','MOON'])
     return data
 
 
@@ -79,6 +76,16 @@ def add_temp_eq_dataset(dataset):
                          dataset['obj_parent_phys_radius_rsun'], dataset['obj_orb_ecc'])]
     dataset.insert(2, 'temp_eq', teq_planet)
     return dataset
+
+def add_lumi(data):
+    data['luminosity']=data.obj_phys_radius_rjup**2*(data.obj_parent_phys_teff_k/5778)**4
+    return data
+
+def add_insolation(data, log=False):
+    data['insolation']=data.luminosity*data.obj_orb_a_au**2
+    if log==True:
+        data['insolation']=np.log10(data.insolation)
+    return data
 
 def split(data):
     train, test = train_test_split(data,test_size=.2,train_size=.8)
@@ -124,7 +131,36 @@ def parallel(data,k,cols):
     pd.plotting.parallel_coordinates(X,class_column='cluster',color=colors,
                                      cols=cols)
     plt.show()
-   
+
+
+def label_5g(data):
+    e_gts = data[(data.obj_phys_radius_rjup>=0.8)&(data.obj_orb_period_day>=2)]
+    hotjups = data[(data.obj_phys_radius_rjup>=0.8)&(data.obj_orb_period_day<=1)]
+    s_earths = data[(data.obj_phys_radius_rjup<=0.34)&(data.obj_phys_radius_rjup>=0.13)&(data.obj_orb_period_day<=2)]
+    hotneps = data[(data.obj_phys_radius_rjup<=0.8)&(data.obj_phys_radius_rjup>=0.25)&(data.obj_orb_period_day<=1)]
+    rocky = data[(data.obj_phys_radius_rjup<=0.13)&(data.obj_orb_period_day<=2)]
+
+    rocky['number'] = np.zeros(len(rocky),int)
+    s_earths['number'] = np.ones(len(s_earths),int)
+    hotneps['number'] = 2*np.ones(len(neps),int)
+    hotjups['number'] = 3*np.ones(len(hotjups),int)
+    e_gts['number'] = 4*np.ones(len(e_gts),int)
+
+    data = pd.concat([rocky,s_earths,neps,hotjups, e_gts])
+
+    group_names = ['Rocky planets','Super Earths','Hot Neptunes','Hot Jupiters','L. Period Giants']
+    label_names = np.zeros(len(data.number))
+    for l in np.array(data.number):
+        label_names = np.append(label_names,group_names[l])
+    data['label'] = label_names
+    return data
+
+def earthUnits(data):
+    data['obj_phys_mass_mearth'] = data.obj_phys_mass_mjup*jupiterMass.to(earthMass)
+    data['obj_phys_radius_rearth'] = data.obj_phys_radius_rjup*jupiterRad.to(earthRad)
+    data=data.drop(columns=['obj_phys_mass_mjup','obj_phys_radius_rjup'])
+    return data
+
 file_US="/home/bolacha/University/Project/code/data-example/all_data_US.rdb"
 file_EU="/home/bolacha/University/Project/code/data-example/all_data_EU.rdb"
 cat_solar="/home/bolacha/University/Project/code/data-example/solar_data.csv"
