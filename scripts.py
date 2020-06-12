@@ -47,7 +47,7 @@ def sol_pd(file_solar,params):
     solar = solar[params]
     return solar
 
-def exo_sol(file_exo,file_solar,params, logP=False, earthUnits=False):
+def exo_sol(file_exo, file_solar, params):
 
     "Reads exoplanet and solar files, returns DataFrame containing both data for the wanted parameters,\
     \with different normalization options.\
@@ -58,10 +58,42 @@ def exo_sol(file_exo,file_solar,params, logP=False, earthUnits=False):
     df_solar = sol_pd(file_solar, params)
     df_exo = read_file(file_exo, params)
     data = pd.concat([df_exo, df_solar])
-    if logP == True:
-        data['log_obj_orb_period_day']=np.log10(data.obj_orb_period_day)
-        data=data.drop(columns='obj_orb_period_day')
+
     data = data.drop(['PLUTO','MOON'])
+    data = data.drop(['K2-22 b','K2-77 b'])
+
+
+  #  data = data.drop(['Kepler-58 c'])
+
+    #corrections to the database - updated values
+
+    data.loc['Kepler-11 g'].obj_phys_mass_mjup = 0.0791*earthMass.to(jupiterMass)
+    data.loc['Kepler-57 c'].obj_phys_mass_mjup = 5.68*earthMass.to(jupiterMass)
+    data.loc['Kepler-59 c'].obj_phys_mass_mjup = 0.0082
+    data.loc['Kepler-59 c'].obj_phys_radius_rjup = .196
+    data.loc['Kepler-28 c'].obj_phys_mass_mjup = 10.9*earthMass.to(jupiterMass)
+    data.loc['Kepler-28 c'].obj_phys_radius_rjup = 2.77*earthRad.to(jupiterRad)
+    data.loc['Kepler-53 c'].obj_phys_mass_mjup = 35.5*earthMass.to(jupiterMass)
+    data.loc['Kepler-53 c'].obj_phys_radius_rjup = 3.12*earthRad.to(jupiterRad)
+    data.loc['Kepler-57 b'].obj_phys_mass_mjup = 118.1*earthMass.to(jupiterMass)
+    data.loc['Kepler-57 b'].obj_phys_radius_rjup = 2.12*earthRad.to(jupiterRad)
+    data.loc['Kepler-28 b'].obj_phys_mass_mjup = 8.8*earthMass.to(jupiterMass)
+    data.loc['Kepler-28 b'].obj_phys_radius_rjup = 1.971*earthRad.to(jupiterRad)
+    data.loc['Kepler-10 c'].obj_phys_mass_mjup = 7.37*earthMass.to(jupiterMass)
+    data.loc['Kepler-10 c'].obj_phys_radius_rjup = 2.351*earthRad.to(jupiterRad)
+    data.loc['Kepler-52 b'].obj_phys_mass_mjup = 79.6*earthMass.to(jupiterMass)
+    data.loc['Kepler-52 b'].obj_phys_radius_rjup = 2.176*earthRad.to(jupiterRad)
+    data.loc['Kepler-53 b'].obj_phys_mass_mjup = 103.1*earthMass.to(jupiterMass)
+    data.loc['Kepler-53 b'].obj_phys_radius_rjup = 3.225*earthRad.to(jupiterRad)
+    data.loc['Kepler-52 c'].obj_phys_mass_mjup = 62.9*earthMass.to(jupiterMass)
+    data.loc['Kepler-52 c'].obj_phys_radius_rjup = 2.196*earthRad.to(jupiterRad)
+    data.loc['Kepler-24 c'].obj_phys_mass_mjup = 33.6*earthMass.to(jupiterMass)
+    data.loc['Kepler-24 c'].obj_phys_radius_rjup = 3.689*earthRad.to(jupiterRad)
+    data.loc['K2-19 b'].obj_phys_mass_mjup = 32.4*earthMass.to(jupiterMass)
+    data.loc['Kepler-58 b'].obj_phys_mass_mjup = 34.9*earthMass.to(jupiterMass)
+    data.loc['Kepler-24 b'].obj_phys_mass_mjup = 33.3*earthMass.to(jupiterMass)
+#
+#
     return data
 
 
@@ -78,18 +110,14 @@ def add_temp_eq_dataset(dataset):
     return dataset
 
 def add_lumi(data):
-    data['luminosity']=data.obj_phys_radius_rjup**2*(data.obj_parent_phys_teff_k/5778)**4
+    data['luminosity'] = data.obj_parent_phys_radius_rsun**2*(data.obj_parent_phys_teff_k/5778)**4
     return data
 
 def add_insolation(data, log=False):
-    data['insolation']=data.luminosity*data.obj_orb_a_au**2
+    data['insolation'] = data.luminosity*(1/data.obj_orb_a_au)**2
     if log==True:
         data['insolation']=np.log10(data.insolation)
     return data
-
-def split(data):
-    train, test = train_test_split(data,test_size=.2,train_size=.8)
-    return train, test
 
 def sil(data):
     K = range(2,10)
@@ -118,18 +146,6 @@ def elbow(data):
     plt.show()
     plt.scatter(data[:,0],data[:,1])
     plt.title("Distribution")
-    plt.show()
-
-def parallel(data,k,cols):
-    kmeans = KMeans(n_clusters=k).fit(np.log(data))
-    centroids, labels = kmeans.cluster_centers_, kmeans.labels_
-    X = pd.DataFrame(np.log(data), index=data.index, columns=data.columns)
-    X["cluster"] = labels
-    cents = pd.DataFrame(kmeans.cluster_centers_, columns=data.columns)
-    cents['cluster'] = cents.index
-    colors=['tab:green','purple','tab:blue']
-    pd.plotting.parallel_coordinates(X,class_column='cluster',color=colors,
-                                     cols=cols)
     plt.show()
 
 
