@@ -47,6 +47,27 @@ def sol_pd(file_solar,params):
     solar = solar[params]
     return solar
 
+
+def sol_pd2(file_solar,params):
+
+    "returns DataFrame with asked parameters for the solar system planets\
+    \file_solar: file path (.csv in this case), params: list of parameters wanted"
+
+    solar=pd.DataFrame.transpose(pd.read_csv(file_solar, index_col=0))
+    solar['temp_eq'] = solar.T_C+274.15
+    solar['mass'] = solar.M*earthMass.to(jupiterMass)
+    solar['radius'] = solar.D*earthRad.to(jupiterRad)
+    solar['orbital_period'] = solar.P*a.to(day)
+    solar['star_teff'] = pd.DataFrame(np.ones(len(solar))*5778, index = solar.index)
+    solar['star_radius'] = pd.DataFrame(np.ones(len(solar)), index = solar.index)
+    solar['star_mass'] = pd.DataFrame(np.ones(len(solar)), index = solar.index)
+    solar['star_metallicity'] = pd.DataFrame(np.zeros(len(solar)), index = solar.index)
+    solar = solar[params]
+    return solar
+
+
+
+
 def exo_sol(file_exo, file_solar, params):
 
     "Reads exoplanet and solar files, returns DataFrame containing both data for the wanted parameters,\
