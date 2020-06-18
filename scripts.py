@@ -170,27 +170,6 @@ def elbow(data):
     plt.show()
 
 
-def label_5g(data):
-    e_gts = data[(data.obj_phys_radius_rjup>=0.8)&(data.obj_orb_period_day>=2)]
-    hotjups = data[(data.obj_phys_radius_rjup>=0.8)&(data.obj_orb_period_day<=1)]
-    s_earths = data[(data.obj_phys_radius_rjup<=0.34)&(data.obj_phys_radius_rjup>=0.13)&(data.obj_orb_period_day<=2)]
-    hotneps = data[(data.obj_phys_radius_rjup<=0.8)&(data.obj_phys_radius_rjup>=0.25)&(data.obj_orb_period_day<=1)]
-    rocky = data[(data.obj_phys_radius_rjup<=0.13)&(data.obj_orb_period_day<=2)]
-
-    rocky['number'] = np.zeros(len(rocky),int)
-    s_earths['number'] = np.ones(len(s_earths),int)
-    hotneps['number'] = 2*np.ones(len(neps),int)
-    hotjups['number'] = 3*np.ones(len(hotjups),int)
-    e_gts['number'] = 4*np.ones(len(e_gts),int)
-
-    data = pd.concat([rocky,s_earths,neps,hotjups, e_gts])
-
-    group_names = ['Rocky planets','Super Earths','Hot Neptunes','Hot Jupiters','L. Period Giants']
-    label_names = np.zeros(len(data.number))
-    for l in np.array(data.number):
-        label_names = np.append(label_names,group_names[l])
-    data['label'] = label_names
-    return data
 
 def earthUnits(data):
     data['obj_phys_mass_mearth'] = data.obj_phys_mass_mjup*jupiterMass.to(earthMass)
