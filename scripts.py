@@ -4,8 +4,6 @@ import matplotlib.pyplot as plt
 from sklearn.cluster import KMeans
 from astropy.units import jupiterMass, jupiterRad, a, day, earthRad, earthMass, solMass, solRad, AU
 from sklearn.preprocessing import MinMaxScaler
-from sklearn.preprocessing import StandardScaler
-from sklearn.model_selection import train_test_split
 from sklearn.metrics import silhouette_score
 
 def read_file(file_exo, params=0):
@@ -86,7 +84,7 @@ def exo_sol(file_exo, file_solar, params):
 
   #  data = data.drop(['Kepler-58 c'])
 
-    #corrections to the database - updated values
+    #corrections to the database - updated values from NASA table at https://exoplanetarchive.ipac.caltech.edu/
 
     data.loc['Kepler-11 g'].obj_phys_mass_mjup = 0.0791*earthMass.to(jupiterMass)
     data.loc['Kepler-57 c'].obj_phys_mass_mjup = 5.68*earthMass.to(jupiterMass)
@@ -113,8 +111,6 @@ def exo_sol(file_exo, file_solar, params):
     data.loc['K2-19 b'].obj_phys_mass_mjup = 32.4*earthMass.to(jupiterMass)
     data.loc['Kepler-58 b'].obj_phys_mass_mjup = 34.9*earthMass.to(jupiterMass)
     data.loc['Kepler-24 b'].obj_phys_mass_mjup = 33.3*earthMass.to(jupiterMass)
-#
-#
     return data
 
 
@@ -168,8 +164,6 @@ def elbow(data):
     plt.scatter(data[:,0],data[:,1])
     plt.title("Distribution")
     plt.show()
-
-
 
 def earthUnits(data):
     data['obj_phys_mass_mearth'] = data.obj_phys_mass_mjup*jupiterMass.to(earthMass)
